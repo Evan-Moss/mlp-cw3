@@ -3,7 +3,7 @@ import random
 import numpy as np
 from collections import deque
 from game import SnakeGameAI, Direction, Point
-from model import Linear_QNet, QTrainer
+from model import Linear_QNet, CNN_QNet, QTrainer
 from helper import plot
 
 MAX_MEMORY = 100_000
@@ -17,12 +17,18 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(11, 256, 3)
+        self.model = CNN_QNet()
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
-
+    
     def get_state(self, game):
+        return game.grid
+        
+    def get_state_OLD(self, game):
         head = game.snake[0]
+        
+        # Points used to check for collisions nearby the snake head.
+        # 20 is the block size (hardcoded).
         point_l = Point(head.x - 20, head.y)
         point_r = Point(head.x + 20, head.y)
         point_u = Point(head.x, head.y - 20)
@@ -71,6 +77,7 @@ class Agent:
         self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
 
     def train_long_memory(self):
+        # Trains for a batch of steps.
         if len(self.memory) > BATCH_SIZE:
             mini_sample = random.sample(self.memory, BATCH_SIZE) # list of tuples
         else:
@@ -78,10 +85,9 @@ class Agent:
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
-        #for state, action, reward, nexrt_state, done in mini_sample:
-        #    self.trainer.train_step(state, action, reward, next_state, done)
 
     def train_short_memory(self, state, action, reward, next_state, done):
+        # Trains for a single step.
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
@@ -92,7 +98,9 @@ class Agent:
             move = random.randint(0, 2)
             final_move[move] = 1
         else:
+            # Do move based on model.
             state0 = torch.tensor(state, dtype=torch.float)
+            state0 = state0.unsqueeze(0).unsqueeze(0)
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move[move] = 1

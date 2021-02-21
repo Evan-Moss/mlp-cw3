@@ -32,6 +32,8 @@ BLACK = (0,0,0)
 BLOCK_SIZE = 20
 SPEED = 40
 
+## TODO Test end-game states are as they should be in the grid.
+
 class SnakeGameAI:
 
     def __init__(self, w=640, h=480):
@@ -129,9 +131,6 @@ class SnakeGameAI:
         self._update_ui()
         self.clock.tick(SPEED)
         # 6. return game over and score
-        
-        #print(self.grid)
-        #print("\n")
         
         return reward, game_over, self.score
 
