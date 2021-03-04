@@ -14,7 +14,7 @@ class Agent:
 
     def __init__(self):
         self.n_games = 0
-        self.epsilon = 0 # randomness
+        self.epsilon = 150 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = CNN_QNet()
@@ -22,7 +22,7 @@ class Agent:
 
     
     def get_state(self, game):
-        return game.grid
+        return game.grids
         
     def get_state_OLD(self, game):
         head = game.snake[0]
@@ -92,15 +92,19 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 80 - self.n_games
+        # always want some randomness.
+        if self.epsilon > 50:
+            self.epsilon = 150 - 0.25*self.n_games
+        
         final_move = [0,0,0]
+        
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 2)
             final_move[move] = 1
         else:
             # Do move based on model.
             state0 = torch.tensor(state, dtype=torch.float)
-            state0 = state0.unsqueeze(0).unsqueeze(0)
+            state0 = state0.unsqueeze(0)
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move[move] = 1

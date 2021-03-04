@@ -42,6 +42,11 @@ class SnakeGameAI:
         
         # Array representing grid. Used for input to model.
         self.grid = np.zeros((h//BLOCK_SIZE, w//BLOCK_SIZE))
+        # The previous 3 frames are stored and used as input to the NN.
+        self.grid_store1 = np.zeros((h//BLOCK_SIZE, w//BLOCK_SIZE))
+        self.grid_store2 = np.zeros((h//BLOCK_SIZE, w//BLOCK_SIZE))
+        self.grid_store3 = np.zeros((h//BLOCK_SIZE, w//BLOCK_SIZE))
+        self.grids = [self.grid, self.grid_store1, self.grid_store2, self.grid_store3]
         
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
@@ -49,6 +54,12 @@ class SnakeGameAI:
         self.clock = pygame.time.Clock()
         self.food = None
         self.reset()
+        
+        
+    def update_grid_stores(self):
+        self.grid_store3 = self.grid_store2.copy()
+        self.grid_store2 = self.grid_store1.copy()
+        self.grid_store1 = self.grid.copy()
 
 
     def reset(self):
@@ -56,6 +67,9 @@ class SnakeGameAI:
         self.direction = Direction.RIGHT
         
         self.grid = np.zeros((self.h//BLOCK_SIZE, self.w//BLOCK_SIZE))
+        self.grid_store1 = np.zeros((self.h//BLOCK_SIZE, self.w//BLOCK_SIZE))
+        self.grid_store2 = np.zeros((self.h//BLOCK_SIZE, self.w//BLOCK_SIZE))
+        self.grid_store3 = np.zeros((self.h//BLOCK_SIZE, self.w//BLOCK_SIZE))
 
         self.head = Point(self.w/2, self.h/2)
         self.snake = [self.head,
@@ -90,6 +104,10 @@ class SnakeGameAI:
 
     def play_step(self, action):
         self.frame_iteration += 1
+        
+        # Store previous frame.
+        #self.update_grid_stores()
+        
         # 1. collect user input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
