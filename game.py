@@ -6,13 +6,15 @@ import numpy as np
 
 pygame.init()
 font = pygame.font.Font('arial.ttf', 25)
-#font = pygame.font.SysFont('arial', 25)
+# font = pygame.font.SysFont('arial', 25)
+
 
 class Direction(Enum):
     RIGHT = 1
     LEFT = 2
     UP = 3
     DOWN = 4
+
 
 Point = namedtuple('Point', 'x, y')
 
@@ -26,9 +28,10 @@ BLACK = (0,0,0)
 BLOCK_SIZE = 20
 SPEED = 40
 
+
 class SnakeGameAI:
 
-    def __init__(self, w=640, h=480):
+    def __init__(self, w=200, h=200):
         self.w = w
         self.h = h
         # init display
@@ -36,7 +39,6 @@ class SnakeGameAI:
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
         self.reset()
-
 
     def reset(self):
         # init game state
@@ -52,14 +54,12 @@ class SnakeGameAI:
         self._place_food()
         self.frame_iteration = 0
 
-
     def _place_food(self):
         x = random.randint(0, (self.w-BLOCK_SIZE )//BLOCK_SIZE )*BLOCK_SIZE
         y = random.randint(0, (self.h-BLOCK_SIZE )//BLOCK_SIZE )*BLOCK_SIZE
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
-
 
     def play_step(self, action):
         self.frame_iteration += 1
@@ -95,7 +95,6 @@ class SnakeGameAI:
         # 6. return game over and score
         return reward, game_over, self.score
 
-
     def is_collision(self, pt=None):
         if pt is None:
             pt = self.head
@@ -107,7 +106,6 @@ class SnakeGameAI:
             return True
 
         return False
-
 
     def _update_ui(self):
         self.display.fill(BLACK)
@@ -121,7 +119,6 @@ class SnakeGameAI:
         text = font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
         pygame.display.flip()
-
 
     def _move(self, action):
         # [straight, right, left]

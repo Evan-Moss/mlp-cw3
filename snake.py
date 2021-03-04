@@ -28,9 +28,10 @@ BLACK = (0,0,0)
 BLOCK_SIZE = 20
 SPEED = 20
 
+
 class Snake:
 
-    def __init__(self, w=640, h=480):
+    def __init__(self, w=200, h=200):
         self.w = w
         self.h = h
         # init display
