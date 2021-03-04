@@ -26,25 +26,27 @@ class Linear_QNet(nn.Module):
 class CNN_QNet(nn.Module):
     def __init__(self):
         super().__init__()
-        # TODO currently hardcoded for a 32x24 game.
+        # TODO currently hardcoded for a 10x10 game.
         # 'out channels' is the number of output features - i.e. hidden units.
         self.conv1 = nn.Conv2d(in_channels = 4, out_channels=16, stride=1, kernel_size=5)
-        self.conv2 = nn.Conv2d(in_channels = 16, out_channels=32, stride=1, kernel_size=2)
+        self.conv2 = nn.Conv2d(in_channels = 16, out_channels=32, padding=2, stride=1, kernel_size=3)
+        self.conv3 = nn.Conv2d(in_channels = 32, out_channels=32, stride=1, kernel_size=2)
         
         # We have to flatten the image for input to the FC layer.
         # Each of the 12 hidden units in conv2 is of size w x h.
         # Thus input to FC1 is hidden units * w x h.
         # w x h has to be worked out from conv1, as downsampling may happen.
-        self.fc1 = nn.Linear(32*27*19, 256)
+        self.fc1 = nn.Linear(32*7*7, 256)
         # One output for each action: left, up, right.
         self.fc2 = nn.Linear(256, 3)
       
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
         
         # Have to move from 2D representation to 1D for linear layer.
-        x = x.view(-1, 32*27*19)
+        x = x.view(-1, 32*7*7)
         
         x = F.relu(self.fc1(x))
         x = self.fc2(x)

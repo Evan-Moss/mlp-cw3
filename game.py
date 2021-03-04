@@ -36,7 +36,7 @@ SPEED = 40
 
 class SnakeGameAI:
 
-    def __init__(self, w=640, h=480):
+    def __init__(self, w=200, h=200):
         self.w = w
         self.h = h
         
@@ -60,6 +60,7 @@ class SnakeGameAI:
         self.grid_store3 = self.grid_store2.copy()
         self.grid_store2 = self.grid_store1.copy()
         self.grid_store1 = self.grid.copy()
+        self.grids = [self.grid, self.grid_store1, self.grid_store2, self.grid_store3]
 
 
     def reset(self):
@@ -70,6 +71,7 @@ class SnakeGameAI:
         self.grid_store1 = np.zeros((self.h//BLOCK_SIZE, self.w//BLOCK_SIZE))
         self.grid_store2 = np.zeros((self.h//BLOCK_SIZE, self.w//BLOCK_SIZE))
         self.grid_store3 = np.zeros((self.h//BLOCK_SIZE, self.w//BLOCK_SIZE))
+        self.grids = [self.grid, self.grid_store1, self.grid_store2, self.grid_store3]
 
         self.head = Point(self.w/2, self.h/2)
         self.snake = [self.head,
@@ -106,7 +108,7 @@ class SnakeGameAI:
         self.frame_iteration += 1
         
         # Store previous frame.
-        #self.update_grid_stores()
+        self.update_grid_stores()
         
         # 1. collect user input
         for event in pygame.event.get():
