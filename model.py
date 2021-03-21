@@ -5,7 +5,38 @@ import torch.nn.functional as F
 import os
 
 
-class Linear_QNet(nn.Module):
+class CNNModel(nn.Module):
+    def __init__(self):
+        super(CNNModel, self).__init__()
+
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1)
+
+        self.net = nn.Sequential(self.conv1, self.conv2)
+
+        self.linear = nn.Linear(16*6*6, out_features=3)
+
+    def forward(self, x):
+        #print("A", x.shape)
+        x = self.net(x)
+        #print("B", x.shape)
+        x = x.view(-1,16*6*6)
+        #print("C", x.shape)
+        x = F.softmax(self.linear(x), dim=1)
+        #print("D", x.shape)
+        #print(x)
+        return x
+
+    def save(self, file_name='modelCNN.pth'):
+        model_folder_path = './model'
+        if not os.path.exists(model_folder_path):
+            os.makedirs(model_folder_path)
+
+        file_name = os.path.join(model_folder_path, file_name)
+        torch.save(self.state_dict(), file_name)
+
+
+class LinearQNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size)
@@ -39,23 +70,22 @@ class QTrainer:
         action = torch.tensor(action, dtype=torch.long)
         reward = torch.tensor(reward, dtype=torch.float)
         # (n, x)
-
-        if len(state.shape) == 1:
+        if len(state.shape) == 3:
             # (1, x)
-            state = torch.unsqueeze(state, 0)
-            next_state = torch.unsqueeze(next_state, 0)
+            state = state.unsqueeze(0)
+            next_state = next_state.unsqueeze(0)
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
 
+
         # 1: predicted Q values with current state
         pred = self.model(state)
-
         target = pred.clone()
         for idx in range(len(done)):
             Q_new = reward[idx]
             if not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
+                Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx].unsqueeze(0)))
 
             target[idx][torch.argmax(action[idx]).item()] = Q_new
     
