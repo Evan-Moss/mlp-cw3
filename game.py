@@ -35,6 +35,13 @@ class SnakeGameAI:
         self.w = w
         self.h = h
         # init display
+
+        self.grid = np.zeros((h//BLOCK_SIZE, w//BLOCK_SIZE))
+
+        self.apple_grid = np.zeros((h // BLOCK_SIZE, w // BLOCK_SIZE))
+        self.body_grid = np.zeros((h // BLOCK_SIZE, w // BLOCK_SIZE))
+        self.head_grid = np.zeros((h // BLOCK_SIZE, w // BLOCK_SIZE))
+
         self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('Snake')
         self.clock = pygame.time.Clock()
@@ -48,11 +55,12 @@ class SnakeGameAI:
         self.snake = [self.head,
                       Point(self.head.x-BLOCK_SIZE, self.head.y),
                       Point(self.head.x-(2*BLOCK_SIZE), self.head.y)]
-
         self.score = 0
         self.food = None
         self._place_food()
         self.frame_iteration = 0
+        self.fruit_dist = self.dist_to_fruit()
+        self.update_grid()
 
     def _place_food(self):
         x = random.randint(0, (self.w-BLOCK_SIZE )//BLOCK_SIZE )*BLOCK_SIZE
@@ -60,6 +68,26 @@ class SnakeGameAI:
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
+
+        #self.grid[y//BLOCK_SIZE, x//BLOCK_SIZE] = 1
+
+    def update_grid(self):
+        self.grid = np.zeros((self.h // BLOCK_SIZE,self.w // BLOCK_SIZE))
+        self.body_grid = np.zeros((self.h // BLOCK_SIZE, self.w // BLOCK_SIZE))
+        self.head_grid = np.zeros((self.h // BLOCK_SIZE, self.w // BLOCK_SIZE))
+        self.apple_grid = np.zeros((self.h // BLOCK_SIZE, self.w // BLOCK_SIZE))
+
+        for p in self.snake:
+            self.grid[int(p.y // BLOCK_SIZE), int(p.x // BLOCK_SIZE)] = 1
+            self.body_grid[int(p.y // BLOCK_SIZE), int(p.x // BLOCK_SIZE)] = 1
+        self.grid[int(self.food.y // BLOCK_SIZE), int(self.food.x // BLOCK_SIZE)] = 1
+
+        self.apple_grid[int(self.food.y // BLOCK_SIZE), int(self.food.x // BLOCK_SIZE)] = 1
+        self.head_grid[int(self.head.y // BLOCK_SIZE), int(self.head.x // BLOCK_SIZE)] = 1
+        self.body_grid[int(self.head.y // BLOCK_SIZE), int(self.head.x // BLOCK_SIZE)] = 0
+
+    def dist_to_fruit(self):
+        return np.sqrt( (self.head.x - self.food.x)**2 + (self.head.y - self.food.y)**2)
 
     def play_step(self, action):
         self.frame_iteration += 1
@@ -78,16 +106,22 @@ class SnakeGameAI:
         game_over = False
         if self.is_collision() or self.frame_iteration > 100*len(self.snake):
             game_over = True
-            reward = -10
+            reward = -1
             return reward, game_over, self.score
 
         # 4. place new food or just move
         if self.head == self.food:
             self.score += 1
-            reward = 10
+            reward = 1
             self._place_food()
         else:
             self.snake.pop()
+            # print(self.dist_to_fruit())
+            if self.dist_to_fruit() < self.fruit_dist:
+                reward += 0.1
+            else:
+                reward = -0.1
+        self.fruit_dist = self.dist_to_fruit()
         
         # 5. update ui and clock
         self._update_ui()
@@ -109,6 +143,7 @@ class SnakeGameAI:
 
     def _update_ui(self):
         self.display.fill(BLACK)
+        self.update_grid()
 
         for pt in self.snake:
             pygame.draw.rect(self.display, BLUE1, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
@@ -122,7 +157,6 @@ class SnakeGameAI:
 
     def _move(self, action):
         # [straight, right, left]
-
         clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
         idx = clock_wise.index(self.direction)
 
@@ -149,3 +183,4 @@ class SnakeGameAI:
             y -= BLOCK_SIZE
 
         self.head = Point(x, y)
+
