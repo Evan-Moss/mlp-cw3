@@ -8,7 +8,7 @@ import sys
 import os
 from collections import deque
 from game import SnakeGameAI, Direction, Point
-# from model import LinearQNet#, QTrainer, CNNModel
+#from model import CNNModel
 from helper import plot
 import time
 from os import path
@@ -18,6 +18,7 @@ from os import path
 if torch.cuda.is_available():
     device = torch.device("cuda:0")
     print("Running on the GPU")
+device = torch.device("cpu")
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -48,6 +49,45 @@ class LinearQNet(nn.Module):
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
 
+class CNNModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(in_channels=5, out_channels=8, padding=1,stride=1, kernel_size=3),
+            nn.ReLU()
+        )
+
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU()
+        )
+
+        self.fc1 = nn.Linear(16*10*10, out_features=256)
+        self.fc2 = nn.Linear(256, out_features = 3)
+
+    def forward(self, x):
+        #print("B", x.shape)
+
+        out = self.layer1(x)
+        out = self.layer2(out)
+        #print("C", out.shape)
+        out = out.view(-1,16*10*10)
+        #print("D", out.shape)
+        x = self.fc1(out)
+        x = self.fc2(x)
+        #print("E", x.shape)
+        #print(x)
+        return x
+
+    def save(self, file_name='modelCNN.pth'):
+        model_folder_path = './model'
+        if not os.path.exists(model_folder_path):
+            os.makedirs(model_folder_path)
+
+        file_name = os.path.join(model_folder_path, file_name)
+        torch.save(self.state_dict(), file_name)
+
 
 class QTrainer:
     def __init__(self, model, lr, gamma):
@@ -69,7 +109,7 @@ class QTrainer:
         # (n, x)
         # print("st", state)
         # print("sh", state.shape)
-        if len(state.shape) == 1:
+        if len(state.shape) == 3:
             # (1, x)
             state = state.unsqueeze(0)
             next_state = next_state.unsqueeze(0)
@@ -78,6 +118,7 @@ class QTrainer:
             done = (done,)
 
         # 1: predicted Q values with current state
+        #print("A", state.shape)
         pred = self.model(state)
         target = pred.clone()
         for idx in range(len(done)):
@@ -101,14 +142,14 @@ class NewAgent:
 
     def __init__(self):
         self.n_games = 0
-        self.epsilon = 2000
+        self.epsilon = 2500
         # randomness, in this implementation it is actually how many episodes you want the agent to be able to act
         # randomly. After 'epsilon' episodes the agent will not be able to act randomly at all. Until then, it will
         # become gradually less and less random.
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        # self.model = CNNModel()
-        self.model = LinearQNet(111, 512, 3).to(device)
+        self.model = CNNModel().to(device)
+        #self.model = LinearQNet(111, 512, 3).to(device)
         # self.model.load_state_dict(torch.load("/Users/azamkhan/github/mlp-cw3/mlp-cw3-evan_changes/model/model.pth"))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
@@ -119,11 +160,15 @@ class NewAgent:
         body_grid = game.body_grid
         head_grid = game.head_grid
 
+        pos1_grid = game.pos1_grid
+        pos2_grid = game.pos2_grid
+
         # print("a", apple_grid)
         # print("b", body_grid)
         # print("h", head_grid)
 
-        grid = np.array([apple_grid, body_grid, head_grid])
+        grid = np.array([apple_grid, body_grid, head_grid, pos1_grid, pos2_grid])
+        #print(grid)
         # print(state)
         head = game.snake[0]
         point_l = Point(head.x - 20, head.y)
@@ -136,46 +181,46 @@ class NewAgent:
         dir_u = game.direction == Direction.UP
         dir_d = game.direction == Direction.DOWN
 
-        state = [
-            # Danger straight
-            (dir_r and game.is_collision(point_r)) or
-            (dir_l and game.is_collision(point_l)) or
-            (dir_u and game.is_collision(point_u)) or
-            (dir_d and game.is_collision(point_d)),
-
-            # Danger right
-            (dir_u and game.is_collision(point_r)) or
-            (dir_d and game.is_collision(point_l)) or
-            (dir_l and game.is_collision(point_u)) or
-            (dir_r and game.is_collision(point_d)),
-
-            # Danger left
-            (dir_d and game.is_collision(point_r)) or
-            (dir_u and game.is_collision(point_l)) or
-            (dir_r and game.is_collision(point_u)) or
-            (dir_l and game.is_collision(point_d)),
-
-            # Move direction
-            dir_l,
-            dir_r,
-            dir_u,
-            dir_d,
-
-            # Food location
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y  # food down
-        ]
-        state = np.array(state, dtype=int)
+        # state = [
+        #     # Danger straight
+        #     (dir_r and game.is_collision(point_r)) or
+        #     (dir_l and game.is_collision(point_l)) or
+        #     (dir_u and game.is_collision(point_u)) or
+        #     (dir_d and game.is_collision(point_d)),
+        #
+        #     # Danger right
+        #     (dir_u and game.is_collision(point_r)) or
+        #     (dir_d and game.is_collision(point_l)) or
+        #     (dir_l and game.is_collision(point_u)) or
+        #     (dir_r and game.is_collision(point_d)),
+        #
+        #     # Danger left
+        #     (dir_d and game.is_collision(point_r)) or
+        #     (dir_u and game.is_collision(point_l)) or
+        #     (dir_r and game.is_collision(point_u)) or
+        #     (dir_l and game.is_collision(point_d)),
+        #
+        #     # Move direction
+        #     dir_l,
+        #     dir_r,
+        #     dir_u,
+        #     dir_d,
+        #
+        #     # Food location
+        #     game.food.x < game.head.x,  # food left
+        #     game.food.x > game.head.x,  # food right
+        #     game.food.y < game.head.y,  # food up
+        #     game.food.y > game.head.y  # food down
+        # ]
+        # state = np.array(state, dtype=int)
 
         # Expand dim for number of channels, since it is "black and white" the number of channels is 1
         # state = np.expand_dims(state, 0)
         # Un-squeeze for batch size
 
-        fstate = np.concatenate((game.grid.flatten(), state), axis=None)
+        #fstate = np.concatenate((game.grid.flatten(), state), axis=None)
         # print (fstate)
-        return fstate
+        return grid
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))  # popleft if MAX_MEMORY is reached

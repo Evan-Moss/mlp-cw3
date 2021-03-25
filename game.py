@@ -3,9 +3,15 @@ import random
 from enum import Enum
 from collections import namedtuple
 import numpy as np
+import sys
+import os
+
+os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 pygame.init()
-font = pygame.font.Font('arial.ttf', 25)
+#font = pygame.font.Font('arial.ttf', 25)
+
+
 # font = pygame.font.SysFont('arial', 25)
 
 
@@ -20,13 +26,13 @@ Point = namedtuple('Point', 'x, y')
 
 # rgb colors
 WHITE = (255, 255, 255)
-RED = (200,0,0)
+RED = (200, 0, 0)
 BLUE1 = (0, 0, 255)
 BLUE2 = (0, 100, 255)
-BLACK = (0,0,0)
+BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
-SPEED = 40
+SPEED = 999999
 
 
 class SnakeGameAI:
@@ -36,25 +42,28 @@ class SnakeGameAI:
         self.h = h
         # init display
 
-        self.grid = np.zeros((h//BLOCK_SIZE, w//BLOCK_SIZE))
+        self.grid = np.zeros((h // BLOCK_SIZE, w // BLOCK_SIZE))
 
         self.apple_grid = np.zeros((h // BLOCK_SIZE, w // BLOCK_SIZE))
         self.body_grid = np.zeros((h // BLOCK_SIZE, w // BLOCK_SIZE))
         self.head_grid = np.zeros((h // BLOCK_SIZE, w // BLOCK_SIZE))
 
+        self.pos1_grid = np.repeat(np.array([range(10)]), repeats=10, axis=0)
+        self.pos2_grid = self.pos1_grid.T
+
         self.display = pygame.display.set_mode((self.w, self.h))
-        pygame.display.set_caption('Snake')
-        self.clock = pygame.time.Clock()
+        #pygame.display.set_caption('Snake')
+        #self.clock = pygame.time.Clock()
         self.reset()
 
     def reset(self):
         # init game state
         self.direction = Direction.RIGHT
 
-        self.head = Point(self.w/2, self.h/2)
+        self.head = Point(self.w / 2, self.h / 2)
         self.snake = [self.head,
-                      Point(self.head.x-BLOCK_SIZE, self.head.y),
-                      Point(self.head.x-(2*BLOCK_SIZE), self.head.y)]
+                      Point(self.head.x - BLOCK_SIZE, self.head.y),
+                      Point(self.head.x - (2 * BLOCK_SIZE), self.head.y)]
         self.score = 0
         self.food = None
         self._place_food()
@@ -63,31 +72,36 @@ class SnakeGameAI:
         self.update_grid()
 
     def _place_food(self):
-        x = random.randint(0, (self.w-BLOCK_SIZE )//BLOCK_SIZE )*BLOCK_SIZE
-        y = random.randint(0, (self.h-BLOCK_SIZE )//BLOCK_SIZE )*BLOCK_SIZE
+        x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+        y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
 
-        #self.grid[y//BLOCK_SIZE, x//BLOCK_SIZE] = 1
+        # self.grid[y//BLOCK_SIZE, x//BLOCK_SIZE] = 1
 
     def update_grid(self):
-        self.grid = np.zeros((self.h // BLOCK_SIZE,self.w // BLOCK_SIZE))
+
         self.body_grid = np.zeros((self.h // BLOCK_SIZE, self.w // BLOCK_SIZE))
         self.head_grid = np.zeros((self.h // BLOCK_SIZE, self.w // BLOCK_SIZE))
         self.apple_grid = np.zeros((self.h // BLOCK_SIZE, self.w // BLOCK_SIZE))
 
+        self.grid = np.zeros((self.h // BLOCK_SIZE, self.w // BLOCK_SIZE))
+
         for p in self.snake:
             self.grid[int(p.y // BLOCK_SIZE), int(p.x // BLOCK_SIZE)] = 1
             self.body_grid[int(p.y // BLOCK_SIZE), int(p.x // BLOCK_SIZE)] = 1
+
         self.grid[int(self.food.y // BLOCK_SIZE), int(self.food.x // BLOCK_SIZE)] = 1
+
+
 
         self.apple_grid[int(self.food.y // BLOCK_SIZE), int(self.food.x // BLOCK_SIZE)] = 1
         self.head_grid[int(self.head.y // BLOCK_SIZE), int(self.head.x // BLOCK_SIZE)] = 1
         self.body_grid[int(self.head.y // BLOCK_SIZE), int(self.head.x // BLOCK_SIZE)] = 0
 
     def dist_to_fruit(self):
-        return np.sqrt( (self.head.x - self.food.x)**2 + (self.head.y - self.food.y)**2)
+        return np.sqrt((self.head.x - self.food.x) ** 2 + (self.head.y - self.food.y) ** 2)
 
     def play_step(self, action):
         self.frame_iteration += 1
@@ -95,16 +109,17 @@ class SnakeGameAI:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                quit()
-        
+                #quit()
+                sys.exit(0)
+
         # 2. move
-        self._move(action) # update the head
+        self._move(action)  # update the head
         self.snake.insert(0, self.head)
-        
+
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+        if self.is_collision() or self.frame_iteration > 100 * len(self.snake):
             game_over = True
             reward = -1
             return reward, game_over, self.score
@@ -117,15 +132,15 @@ class SnakeGameAI:
         else:
             self.snake.pop()
             # print(self.dist_to_fruit())
-            if self.dist_to_fruit() < self.fruit_dist:
+            '''if self.dist_to_fruit() < self.fruit_dist:
                 reward += 0.1
             else:
-                reward = -0.1
+                reward = -0.1'''
         self.fruit_dist = self.dist_to_fruit()
-        
+
         # 5. update ui and clock
-        self._update_ui()
-        self.clock.tick(SPEED)
+        #self._update_ui()
+        #self.clock.tick(SPEED)
         # 6. return game over and score
         return reward, game_over, self.score
 
@@ -147,7 +162,7 @@ class SnakeGameAI:
 
         for pt in self.snake:
             pygame.draw.rect(self.display, BLUE1, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
-            pygame.draw.rect(self.display, BLUE2, pygame.Rect(pt.x+4, pt.y+4, 12, 12))
+            pygame.draw.rect(self.display, BLUE2, pygame.Rect(pt.x + 4, pt.y + 4, 12, 12))
 
         pygame.draw.rect(self.display, RED, pygame.Rect(self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
 
@@ -161,13 +176,13 @@ class SnakeGameAI:
         idx = clock_wise.index(self.direction)
 
         if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx] # no change
+            new_dir = clock_wise[idx]  # no change
         elif np.array_equal(action, [0, 1, 0]):
             next_idx = (idx + 1) % 4
-            new_dir = clock_wise[next_idx] # right turn r -> d -> l -> u
-        else: # [0, 0, 1]
+            new_dir = clock_wise[next_idx]  # right turn r -> d -> l -> u
+        else:  # [0, 0, 1]
             next_idx = (idx - 1) % 4
-            new_dir = clock_wise[next_idx] # left turn r -> u -> l -> d
+            new_dir = clock_wise[next_idx]  # left turn r -> u -> l -> d
 
         self.direction = new_dir
 

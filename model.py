@@ -8,24 +8,34 @@ import os
 
 class CNNModel(nn.Module):
     def __init__(self):
-        super(CNNModel, self).__init__()
+        super().__init__()
 
-        self.conv1 = torch.nn.Conv2d(3, 32, 3, padding=1)
-        self.conv2 = torch.nn.Conv2d(32, 32, 3, padding=1)
-        self.pool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-        self.linear1 = torch.nn.Linear(32 * (int(10 / 2)) ** 2, 512)
-        self.linear2 = torch.nn.Linear(512, 256)
-        self.linear3 = torch.nn.Linear(256, 3)
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(in_channels=5, out_channels=8, padding=1,stride=1, kernel_size=3),
+            nn.ReLU()
+        )
 
-    def forward(self, s):
-        s = F.relu(self.conv1(s))
-        s = F.relu(self.conv2(s))
-        s = self.pool(s)
-        s = s.view(-1, 32 * (int(10 / 2)) ** 2)
-        s = F.relu(self.linear1(s))
-        s = F.relu(self.linear2(s))
-        s = self.linear3(s)
-        return s
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU()
+        )
+
+        self.fc1 = nn.Linear(16*10*10, out_features=256)
+        self.fc2 = nn.Linear(256, out_features = 3)
+
+    def forward(self, x):
+        #print("B", x.shape)
+
+        out = self.layer1(x)
+        out = self.layer2(out)
+        #print("C", out.shape)
+        out = out.view(-1,16*10*10)
+        #print("D", out.shape)
+        x = self.fc1(out)
+        x = self.fc2(x)
+        #print("E", x.shape)
+        #print(x)
+        return x
 
     def save(self, file_name='modelCNN.pth'):
         model_folder_path = './model'
