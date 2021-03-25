@@ -5,6 +5,9 @@ from collections import deque
 from game import SnakeGameAI, Direction, Point
 from model import LinearQNet, QTrainer, CNNModel
 from helper import plot
+import time
+from os import path
+
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -31,16 +34,20 @@ class NewAgent:
         body_grid = game.body_grid
         head_grid = game.head_grid
 
-        #print("a", apple_grid)
-        #print("b", body_grid)
-        #print("h", head_grid)
+        pos1_grid = game.pos1_grid
+        pos2_grid = game.pos2_grid
 
-        state = np.array([apple_grid, body_grid, head_grid])
+        # print("a", apple_grid)
+        # print("b", body_grid)
+        # print("h", head_grid)
+
+        state = np.array([apple_grid, body_grid, head_grid,pos1_grid, pos2_grid])
 
         # Expand dim for number of channels, since it is "black and white" the number of channels is 1
-        #state = np.expand_dims(state, 0)
+        # state = np.expand_dims(state, 0)
         # Un-squeeze for batch size
-        #print(state)
+        # print(state)
+
         return state
 
     def remember(self, state, action, reward, next_state, done):
@@ -169,9 +176,16 @@ class Agent:
 def train():
     plot_scores = []
     plot_mean_scores = []
+
+    filename = time.strftime("%Y_%m_%d-%H_%M_%S.txt")
+
+    f = open(path.join('./model', filename), "a")
+    f.write("{}, {}, {}".format("Game number", "Score", "Record"))
+    f.close()
+
     total_score = 0
     record = 0
-    agent = NewAgent()
+    agent = Agent()
     game = SnakeGameAI()
     while True:
         # get old state
@@ -206,6 +220,11 @@ def train():
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.n_games
+
+            f = open(path.join('./model', filename), "a")
+            f.write("{}, {}, {}".format_map(agent.n_games, score, record))
+            f.close()
+
             #plot_mean_scores.append(mean_score)
             #plot(plot_scores, plot_mean_scores)
 

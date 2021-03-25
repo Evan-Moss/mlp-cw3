@@ -9,7 +9,7 @@ class CNNModel(nn.Module):
     def __init__(self):
         super(CNNModel, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, stride=1)
+        self.conv1 = nn.Conv2d(in_channels=5, out_channels=8, kernel_size=3, padding=1, stride=1)
         self.conv2 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1)
 
         self.net = nn.Sequential(self.conv1, self.conv2)
