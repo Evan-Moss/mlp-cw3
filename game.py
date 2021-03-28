@@ -3,9 +3,14 @@ import random
 from enum import Enum
 from collections import namedtuple
 import numpy as np
+import sys
+import os
+
+os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 pygame.init()
-font = pygame.font.Font('arial.ttf', 25)
+#commented to run on cluster
+# font = pygame.font.Font('arial.ttf', 25)
 # font = pygame.font.SysFont('arial', 25)
 
 
@@ -26,7 +31,7 @@ BLUE2 = (0, 100, 255)
 BLACK = (0,0,0)
 
 BLOCK_SIZE = 20
-SPEED = 40
+SPEED = 999999
 
 
 class SnakeGameAI:
@@ -36,8 +41,10 @@ class SnakeGameAI:
         self.h = h
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
-        pygame.display.set_caption('Snake')
-        self.clock = pygame.time.Clock()
+
+        #commented to run on cluster
+        #pygame.display.set_caption('Snake')
+        #self.clock = pygame.time.Clock()
         self.reset()
 
     def reset(self):
@@ -90,8 +97,11 @@ class SnakeGameAI:
             self.snake.pop()
         
         # 5. update ui and clock
-        self._update_ui()
-        self.clock.tick(SPEED)
+
+        # commented to run on cluster
+
+        #self._update_ui()
+        #self.clock.tick(SPEED)
         # 6. return game over and score
         return reward, game_over, self.score
 
