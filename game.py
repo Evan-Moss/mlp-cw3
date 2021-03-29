@@ -9,7 +9,7 @@ import os
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 pygame.init()
-#commented to run on cluster
+# commented to run on cluster
 # font = pygame.font.Font('arial.ttf', 25)
 # font = pygame.font.SysFont('arial', 25)
 
@@ -42,9 +42,9 @@ class SnakeGameAI:
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
 
-        #commented to run on cluster
-        #pygame.display.set_caption('Snake')
-        #self.clock = pygame.time.Clock()
+        # commented to run on cluster
+        # pygame.display.set_caption('Snake')
+        # self.clock = pygame.time.Clock()
         self.reset()
 
     def reset(self):
@@ -55,10 +55,12 @@ class SnakeGameAI:
         self.snake = [self.head,
                       Point(self.head.x-BLOCK_SIZE, self.head.y),
                       Point(self.head.x-(2*BLOCK_SIZE), self.head.y)]
-
+        self.dist_to_apple = 0
         self.score = 0
         self.food = None
+        self.dist_to_apple = 0
         self._place_food()
+        self.update_dist_to_apple()
         self.frame_iteration = 0
 
     def _place_food(self):
@@ -67,6 +69,13 @@ class SnakeGameAI:
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
+
+    def update_dist_to_apple(self):
+        # Use Manhattan (or snake) distance
+        dist = np.abs(self.food.x - self.head.x) + np.abs(self.food.y - self.head.y)
+        # Distance // block_size to find the distance in blocks. / 20 to get a number between 0 and 1.
+        # I.E second /20 is grid_size * 2 (max distance in Manhattan distance).
+        self.dist_to_apple = (dist // BLOCK_SIZE) / 20
 
     def play_step(self, action):
         self.frame_iteration += 1
@@ -79,7 +88,7 @@ class SnakeGameAI:
         # 2. move
         self._move(action) # update the head
         self.snake.insert(0, self.head)
-        
+
         # 3. check if game over
         reward = 0
         game_over = False
@@ -99,10 +108,13 @@ class SnakeGameAI:
         # 5. update ui and clock
 
         # commented to run on cluster
+        # self._update_ui()
+        # self.clock.tick(SPEED)
 
-        #self._update_ui()
-        #self.clock.tick(SPEED)
         # 6. return game over and score
+
+        self.update_dist_to_apple()
+
         return reward, game_over, self.score
 
     def is_collision(self, pt=None):

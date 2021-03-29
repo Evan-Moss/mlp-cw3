@@ -148,7 +148,11 @@ class Agent:
             game.food.x < game.head.x,  # food left
             game.food.x > game.head.x,  # food right
             game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y  # food down
+            game.food.y > game.head.y,  # food down
+
+            # Distance to apple (scaled value between 0 and 1)
+            
+            # game.dist_to_apple
             ]
 
         return np.array(state, dtype=int)
