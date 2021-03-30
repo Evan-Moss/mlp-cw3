@@ -134,11 +134,15 @@ class NewAgent:
         point_u = Point(head.x, head.y - 20)
         point_d = Point(head.x, head.y + 20)
 
+        point_ul = Point(head.x - 20, head.y - 20)
+        point_ur = Point(head.x + 20, head.y - 20)
+        point_dr = Point(head.x + 20, head.y + 20)
+        point_dl = Point(head.x - 20, head.y + 20)
+
         dir_l = game.direction == Direction.LEFT
         dir_r = game.direction == Direction.RIGHT
         dir_u = game.direction == Direction.UP
         dir_d = game.direction == Direction.DOWN
-
         state = [
             # Danger straight
             (dir_r and game.is_collision(point_r)) or
@@ -158,6 +162,30 @@ class NewAgent:
             (dir_r and game.is_collision(point_u)) or
             (dir_l and game.is_collision(point_d)),
 
+            # Danger up right
+            (dir_d and game.is_collision(point_dl)) or
+            (dir_u and game.is_collision(point_ur)) or
+            (dir_r and game.is_collision(point_dr)) or
+            (dir_l and game.is_collision(point_ul)),
+
+            # Danger up left
+            (dir_d and game.is_collision(point_dr)) or
+            (dir_u and game.is_collision(point_ul)) or
+            (dir_r and game.is_collision(point_ur)) or
+            (dir_l and game.is_collision(point_dl)),
+
+            # Danger down right
+            (dir_d and game.is_collision(point_ul)) or
+            (dir_u and game.is_collision(point_dr)) or
+            (dir_r and game.is_collision(point_dl)) or
+            (dir_l and game.is_collision(point_ur)),
+
+            # Danger down left
+            (dir_d and game.is_collision(point_ur)) or
+            (dir_u and game.is_collision(point_dl)) or
+            (dir_r and game.is_collision(point_ul)) or
+            (dir_l and game.is_collision(point_dr)),
+
             # Move direction
             dir_l,
             dir_r,
@@ -173,6 +201,7 @@ class NewAgent:
             # Distance to Apple
             game.dist_to_apple
         ]
+
         state = np.array(state, dtype=float)
         #print(state)
 
